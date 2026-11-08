@@ -1,6 +1,16 @@
-// Configuración de Karma: ejecuta las pruebas de Jasmine en Chrome.
+// Configuración de Karma: ejecuta las pruebas de Jasmine en un navegador real.
 // Webpack + Babel transforman el JSX y babel-plugin-istanbul instrumenta el código para la cobertura.
 const path = require('path');
+
+// Navegador elegido con la variable de entorno KARMA_BROWSER (Chrome por defecto).
+// Chrome también sirve para Chromium y Ungoogled Chromium indicando su ruta en CHROME_BIN.
+const NAVEGADORES = ['Chrome', 'Chromium', 'Firefox'];
+const navegador = process.env.KARMA_BROWSER || 'Chrome';
+if (!NAVEGADORES.includes(navegador)) {
+  throw new Error(`KARMA_BROWSER="${navegador}" no es válido. Usa uno de: ${NAVEGADORES.join(', ')}.`);
+}
+// Con --single-run (npm run test:ci) se usa la versión sin ventana del navegador
+const sinVentana = process.argv.includes('--single-run');
 
 module.exports = function configurarKarma(config) {
   config.set({
@@ -40,7 +50,7 @@ module.exports = function configurarKarma(config) {
                 babelrc: false,
                 configFile: false,
                 presets: [
-                  ['@babel/preset-env', { targets: { chrome: '100' } }],
+                  ['@babel/preset-env', { targets: { chrome: '100', firefox: '100' } }],
                   ['@babel/preset-react', { runtime: 'automatic' }],
                 ],
                 plugins: [
@@ -65,13 +75,14 @@ module.exports = function configurarKarma(config) {
 
     client: {
       jasmine: { random: false },
-      clearContext: false, // deja visibles los resultados en la ventana de Chrome
+      clearContext: false, // deja visibles los resultados en la ventana del navegador
     },
 
     plugins: [
       'karma-jasmine',
       'karma-jasmine-html-reporter',
-      'karma-chrome-launcher',
+      'karma-chrome-launcher', // Chrome, Chromium y sus versiones Headless
+      'karma-firefox-launcher', // Firefox y FirefoxHeadless
       'karma-coverage',
       'karma-webpack',
     ],
@@ -79,7 +90,7 @@ module.exports = function configurarKarma(config) {
     port: 9876,
     colors: true,
     logLevel: config.LOG_INFO,
-    browsers: ['Chrome'],
+    browsers: [sinVentana ? `${navegador}Headless` : navegador],
     autoWatch: true,
     singleRun: false,
   });
